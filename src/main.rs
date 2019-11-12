@@ -1,58 +1,41 @@
-use std::collections::HashMap;
-use redis::Commands;
+use connection::Connection;
+
+mod connection;
 
 static REDIS_URL: &str = "redis://127.0.0.1/";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = redis::Client::open(REDIS_URL)?;
-    let mut connection = client.get_connection()?;
+    let mut conn = Connection::new(REDIS_URL)?;
 
-    let processes = connection.smembers::<_, Vec<String>>("processes")?;
-    println!("processes: {:#?}", processes);
+    for process in conn.processes()? {
+        println!("\nprocess ({}): {:#?}", process, conn.process_info(&process)?);
 
-    for process_name in &processes {
-        let process = connection.hgetall::<_, HashMap<String, String>>(process_name)?;
-        println!("\nprocess ({}): {:#?}", process_name, process);
-
-        let workers = connection.hgetall::<_, HashMap<String, String>>(format!("{}:workers", process_name))?;
-        println!("\nworkers ({}):", process_name);
-        for (id, worker) in &workers {
-            let record: serde_json::Value = serde_json::from_str(worker)?;
-            println!("- {}: {:?}", id, record);
+        println!("\nworkers ({}):", process);
+        for (id, worker) in conn.workers(&process)? {
+            println!("- {}: {:?}", id, worker);
         }
     }
 
-    let queues = connection.smembers::<_, Vec<String>>("queues")?;
-    println!("\nqueues: {:#?}", queues);
-
-    for queue_name in &queues {
-        let queue = connection.lrange::<_, Vec<String>>(format!("queue:{}", queue_name), 0, -1)?;
-        println!("\nqueue ({}):", queue_name);
-        for item in &queue {
-            let record: serde_json::Value = serde_json::from_str(item)?;
-            println!("- {:?}", record);
+    for queue in conn.queues()? {
+        println!("\nqueue ({}):", queue);
+        for item in conn.queue(&queue)? {
+            println!("- {:?}", item);
         }
     }
 
-    let retry = connection.zrange::<_, Vec<String>>("retry", 0, -1)?;
     println!("\nretry:");
-    for item in &retry {
-        let record: serde_json::Value = serde_json::from_str(item)?;
-        println!("- {:?}", record);
+    for item in conn.retry()? {
+        println!("- {:?}", item);
     }
 
-    let schedule = connection.zrange::<_, Vec<String>>("schedule", 0, -1)?;
     println!("\nschedule:");
-    for item in &schedule {
-        let record: serde_json::Value = serde_json::from_str(item)?;
-        println!("- {:?}", record);
+    for item in conn.schedule()? {
+        println!("- {:?}", item);
     }
 
-    let dead = connection.zrange::<_, Vec<String>>("dead", 0, -1)?;
     println!("\ndead:");
-    for item in &dead {
-        let record: serde_json::Value = serde_json::from_str(item)?;
-        println!("- {:?}", record);
+    for item in conn.dead()? {
+        println!("- {:?}", item);
     }
 
     Ok(())
