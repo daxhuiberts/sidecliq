@@ -1,0 +1,9 @@
+[package]
+name = "sidecliq"
+version = "0.1.0"
+authors = ["Dax Huiberts <daxhuiberts@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+redis = "*"
+serde_json = "*"
