@@ -5,5 +5,9 @@ authors = ["Dax Huiberts <daxhuiberts@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-redis = "*"
+itertools = "*"
+redis = "0.9.1"
+serde = { version = "*", features = ["derive"] }
 serde_json = "*"
+serde_with = { version = "*", features = ["json"] }
+serde-redis = "*"

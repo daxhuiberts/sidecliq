@@ -7,18 +7,18 @@ static REDIS_URL: &str = "redis://127.0.0.1/";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = Connection::new(REDIS_URL)?;
 
-    for process in conn.processes()? {
-        println!("\nprocess ({}): {:#?}", process, conn.process_info(&process)?);
+    for process_name in conn.process_names()? {
+        println!("\nprocess ({}): {:?}", process_name, conn.process(&process_name)?);
 
-        println!("\nworkers ({}):", process);
-        for (id, worker) in conn.workers(&process)? {
+        println!("\nworkers ({}):", process_name);
+        for (id, worker) in conn.workers(&process_name)? {
             println!("- {}: {:?}", id, worker);
         }
     }
 
-    for queue in conn.queues()? {
-        println!("\nqueue ({}):", queue);
-        for item in conn.queue(&queue)? {
+    for queue_name in conn.queue_names()? {
+        println!("\nqueue ({}):", queue_name);
+        for item in conn.queue(&queue_name)? {
             println!("- {:?}", item);
         }
     }
