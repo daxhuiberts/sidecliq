@@ -1,6 +1,7 @@
 use connection::Connection;
 
 mod connection;
+mod types;
 
 static REDIS_URL: &str = "redis://127.0.0.1/";
 
