@@ -1,6 +1,6 @@
+use serde_json::Value as JsonValue;
 use serde::Deserialize;
 use std::error::Error;
-use serde_json::Value;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -30,7 +30,7 @@ pub struct ProcessInfo {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Job {
-    pub args: Vec<Value>,
+    pub args: Vec<JsonValue>,
     pub class: String,
     pub created_at: f64,
     pub jid: String,
