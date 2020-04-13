@@ -3,4 +3,5 @@
 members = [
   "sidekiq-lib",
   "sidekiq-cli",
+  "sidekiq-warp",
 ]
