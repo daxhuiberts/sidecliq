@@ -1,9 +1,8 @@
 use sidekiq_lib::client::Client;
 
-static REDIS_URL: &str = "redis://127.0.0.1/";
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = Client::new(REDIS_URL)?;
+    let redis_url = std::env::var("REDIS_URL")?;
+    let mut client = Client::new(&redis_url)?;
 
     for process_name in client.process_names()? {
         println!("\nprocess ({}): {:?}", process_name, client.process(&process_name)?);
