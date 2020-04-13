@@ -1,8 +1,4 @@
-use client::Client;
-
-mod connection;
-mod client;
-mod types;
+use sidekiq_lib::client::Client;
 
 static REDIS_URL: &str = "redis://127.0.0.1/";
 
