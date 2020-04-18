@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use super::connection::Connection;
 use super::types::*;
@@ -18,12 +17,29 @@ impl Client {
     }
 
     pub fn process(&mut self, process_name: &str) -> Result<Process> {
-        Ok(serde_redis::from_redis_value(self.connection.process(process_name)?)?)
+        use serde::{Deserialize, Serialize};
+        #[derive(Debug, Deserialize, Serialize)]
+        #[serde(deny_unknown_fields)]
+        pub struct ProcessRaw {
+            pub busy: bool,
+            #[serde(deserialize_with = "serde_with::json::nested::deserialize")]
+            pub info: JsonValue,
+            pub quiet: bool,
+            pub beat: f64
+        }
+
+        let mut process: ProcessRaw = serde_redis::from_redis_value(self.connection.process(process_name)?)?;
+        let info = std::mem::take(&mut process.info);
+        let mut map = if let JsonValue::Object(map) = info { Ok(map) } else { Err("process.info is not a json object") }?;
+        map.insert("busy".into(), JsonValue::Bool(process.busy));
+        map.insert("quiet".into(), JsonValue::Bool(process.quiet));
+        map.insert("beat".into(), JsonValue::Number(serde_json::Number::from_f64(process.beat).unwrap()));
+        Ok(serde_json::from_value(JsonValue::Object(map))?)
     }
 
-    pub fn workers(&mut self, process_name: &str) -> Result<HashMap<String, JsonValue>> {
+    pub fn workers(&mut self, process_name: &str) -> Result<HashMap<String, Job>> {
         let raw_result: HashMap<String, String> = serde_redis::from_redis_value(self.connection.workers(&format!("{}:workers", process_name))?)?;
-        let result: Result<HashMap<String, JsonValue>> = raw_result.into_iter().map(|(id, worker)| Ok((id, serde_json::from_str(&worker)?)) ).try_collect();
+        let result: Result<HashMap<String, Job>> = raw_result.into_iter().map(|(id, worker)| Ok((id, serde_json::from_str(&worker)?)) ).try_collect();
         result
     }
 
