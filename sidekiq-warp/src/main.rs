@@ -1,47 +1,50 @@
+use hyper::server::Server;
 use serde::{Deserialize, Serialize};
 use sidekiq_lib::client::Client;
-use sidekiq_lib::types::{JsonValue, Process};
+use sidekiq_lib::types;
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::error::Error;
-use std::sync::{Arc, Mutex};
 use tera::{Context, Tera};
-use tokio::runtime::Runtime;
 use warp::Filter;
 
 static TEMPLATE_INDEX: &str = include_str!("../templates/index.html");
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let redis_url = std::env::var("REDIS_URL")?;
-    let sidekiq = Client::new(&redis_url)?;
-    let mut tera = Tera::default();
-    tera.add_raw_template("index.html", TEMPLATE_INDEX)?;
-    let context = Arc::new(Mutex::new((sidekiq, tera)));
-
-    let req = move || {
-        let (sidekiq, tera) = &mut *context.lock().unwrap();
-        let result = handle_request(sidekiq, tera).unwrap();
-        warp::reply::html(result)
+#[tokio::main]
+async fn main() {
+    let req = || {
+        warp::reply::html(handle_request().unwrap())
     };
 
     let index = warp::path::end().map(req);
-    let server = warp::serve(index).run(([127, 0, 0, 1], 3030));
-    let mut runtime = Runtime::new()?;
-    runtime.block_on(server);
-    Ok(())
+    let service = warp::service(index);
+    let make_svc = hyper::service::make_service_fn(|_| async move { Ok::<_, Infallible>(service) });
+
+    let mut listenfd = listenfd::ListenFd::from_env();
+    let server = if let Some(listener) = listenfd.take_tcp_listener(0).unwrap() {
+        Server::from_tcp(listener).unwrap()
+    } else {
+        Server::bind(&([127, 0, 0, 1], 3030).into())
+    };
+    server.serve(make_svc).await.unwrap();
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct ProcessInfo {
-    process: Process,
-    workers: HashMap<String, JsonValue>,
+struct Process {
+    info: types::Process,
+    workers: HashMap<String, types::JsonValue>,
 }
 
-fn handle_request(sidekiq: &mut Client, tera: &mut Tera) -> Result<String, Box<dyn Error>> {
+fn handle_request() -> Result<String, Box<dyn Error>> {
+    let redis_url = std::env::var("REDIS_URL")?;
+    let mut sidekiq = Client::new(&redis_url)?;
+    let mut tera = Tera::default();
+    tera.add_raw_template("index.html", TEMPLATE_INDEX)?;
     let process_names = sidekiq.process_names()?;
-    let processes: HashMap<String, ProcessInfo> = process_names.into_iter().map(|process_name| {
+    let processes: HashMap<String, Process> = process_names.into_iter().map(|process_name| {
         let process = sidekiq.process(&process_name).unwrap();
         let workers = sidekiq.workers(&process_name).unwrap();
-        (process_name, ProcessInfo { process, workers })
+        (process_name, Process { info: process, workers })
     }).collect();
     let mut context = Context::new();
     context.insert("processes", &processes);

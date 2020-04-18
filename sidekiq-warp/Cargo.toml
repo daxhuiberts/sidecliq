@@ -5,8 +5,10 @@ authors = ["Dax Huiberts <daxhuiberts@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+hyper = "*"
+listenfd = "*"
 serde = { version = "*", features = ["derive"] }
 sidekiq-lib = { path = "../sidekiq-lib" }
 tera = { version = "*", default-features = false }
-tokio = "*"
+tokio = { version = "0.2", features = ["full"] }
 warp = "*"
