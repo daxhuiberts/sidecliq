@@ -5,3 +5,5 @@ members = [
   "sidekiq-cli",
   "sidekiq-warp",
 ]
+
+default-members = ["sidekiq-warp"]

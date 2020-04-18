@@ -1,0 +1,20 @@
+<html>
+  <head>
+    <title>Sidecliq</title>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sidecliq</h1>
+    <ul>
+      {% for name, process in processes %}
+        <h2>{{ name }}</h2>
+        <pre>{{ process.info | json_encode }}</pre>
+      {% endfor %}
+    </ul>
+    <pre>{{ __tera_context }}</pre>
+  </body>
+</html>
