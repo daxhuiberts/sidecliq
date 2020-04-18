@@ -1,5 +1,4 @@
 use hyper::server::Server;
-use serde::{Deserialize, Serialize};
 use sidekiq_lib::client::Client;
 use sidekiq_lib::types;
 use std::collections::HashMap;
@@ -29,25 +28,44 @@ async fn main() {
     server.serve(make_svc).await.unwrap();
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct Process {
-    info: types::Process,
-    workers: HashMap<String, types::JsonValue>,
-}
-
 fn handle_request() -> Result<String, Box<dyn Error>> {
     let redis_url = std::env::var("REDIS_URL")?;
     let mut sidekiq = Client::new(&redis_url)?;
     let mut tera = Tera::default();
     tera.add_raw_template("index.html", TEMPLATE_INDEX)?;
-    let process_names = sidekiq.process_names()?;
-    let processes: HashMap<String, Process> = process_names.into_iter().map(|process_name| {
-        let process = sidekiq.process(&process_name).unwrap();
-        let workers = sidekiq.workers(&process_name).unwrap();
-        (process_name, Process { info: process, workers })
-    }).collect();
-    let mut context = Context::new();
-    context.insert("processes", &processes);
+    let context = sidekiq_data(&mut sidekiq)?;
     let rendered = tera.render("index.html", &context)?;
     Ok(rendered)
+}
+
+fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Deserialize, Serialize)]
+    struct Process {
+        info: types::Process,
+        workers: HashMap<String, types::Job>,
+    }
+
+    let mut context = Context::new();
+
+    let process_names = client.process_names()?;
+    let processes: HashMap<String, Process> = process_names.into_iter().map(|process_name| {
+        let process = client.process(&process_name).unwrap();
+        let workers = client.workers(&process_name).unwrap();
+        (process_name, Process { info: process, workers })
+    }).collect();
+    context.insert("processes", &processes);
+
+    let queue_names = client.queue_names()?;
+    let queues: HashMap<String, Vec<types::Job>> = queue_names.into_iter().map(|queue_name| {
+        let queue = client.queue(&queue_name).unwrap();
+        (queue_name, queue)
+    }).collect();
+    context.insert("queues", &queues);
+
+    context.insert("retry", &client.retry()?);
+    context.insert("schedule", &client.schedule()?);
+    context.insert("dead", &client.dead()?);
+
+    Ok(context)
 }
