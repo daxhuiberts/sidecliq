@@ -1,20 +1,20 @@
-use serde_json::Value as JsonValue;
-use serde::Deserialize;
+pub use serde_json::Value as JsonValue;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Process {
     pub busy: u8,
-    #[serde(with = "serde_with::json::nested")]
+    #[serde(deserialize_with = "serde_with::json::nested::deserialize")]
     pub info: ProcessInfo,
     pub quiet: bool,
     pub beat: f64
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProcessInfo {
     pub hostname: String,
@@ -27,7 +27,7 @@ pub struct ProcessInfo {
     pub identity: String
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Job {
     pub args: Vec<JsonValue>,
@@ -40,7 +40,7 @@ pub struct Job {
     pub retry_info: Option<RetryInfo>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct RetryInfo {
     pub enqueued_at: f64,
