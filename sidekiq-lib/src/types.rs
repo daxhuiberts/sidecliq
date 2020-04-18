@@ -4,19 +4,10 @@ use std::error::Error;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Process {
-    pub busy: u8,
-    #[serde(deserialize_with = "serde_with::json::nested::deserialize")]
-    pub info: ProcessInfo,
-    pub quiet: bool,
-    pub beat: f64
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ProcessInfo {
+    pub busy: bool,
     pub hostname: String,
     pub started_at: f64,
     pub pid: u32,
@@ -24,7 +15,9 @@ pub struct ProcessInfo {
     pub concurrency: u8,
     pub queues: Vec<String>,
     pub labels: Vec<String>,
-    pub identity: String
+    pub identity: String,
+    pub quiet: bool,
+    pub beat: f64
 }
 
 #[derive(Debug, Deserialize, Serialize)]
