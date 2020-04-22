@@ -23,7 +23,7 @@ async fn main() {
     let server = if let Some(listener) = listenfd.take_tcp_listener(0).unwrap() {
         Server::from_tcp(listener).unwrap()
     } else {
-        Server::bind(&([127, 0, 0, 1], 3030).into())
+        Server::bind(&([127, 0, 0, 1], 3000).into())
     };
     server.serve(make_svc).await.unwrap();
 }
