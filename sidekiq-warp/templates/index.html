@@ -9,12 +9,64 @@
   </head>
   <body>
     <h1>Sidecliq</h1>
-    <ul>
-      {% for name, process in processes %}
-        <h2>{{ name }}</h2>
-        <pre>{{ process.info | json_encode }}</pre>
+    <h2>Processes</h2>
+    {% for name, process in processes %}
+      <h3>{{ name }}</h3>
+      <h4>Info</h4>
+      <table>
+        {% for key, value in process.info %}
+          <tr>
+            <td>{{ key }}</td>
+            <td>{{ value }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+      {% if process.workers | length > 0 %}
+        <h4>Jobs</h4>
+        <table>
+          {% for id, data in process.workers %}
+            <tr>
+              <td>{{ id }}</td>
+              <td>{{ data | json_encode }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% endif %}
+    {% endfor %}
+    <h2>Enqueued</h2>
+    {% for name, queue in queues %}
+      <h3>{{ name }}</h3>
+      <table>
+        {% for job in queue %}
+          <tr>
+            <td>{{ job | json_encode }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endfor %}
+    <h2>Retry</h2>
+    <table>
+      {% for job in retry %}
+        <tr>
+          <td>{{ job | json_encode }}</td>
+        </tr>
       {% endfor %}
-    </ul>
-    <pre>{{ __tera_context }}</pre>
+    </table>
+    <h2>Scheduled</h2>
+    <table>
+      {% for job in schedule %}
+        <tr>
+          <td>{{ job | json_encode }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+    <h2>Dead</h2>
+    <table>
+      {% for job in dead %}
+        <tr>
+          <td>{{ job | json_encode }}</td>
+        </tr>
+      {% endfor %}
+    </table>
   </body>
 </html>
