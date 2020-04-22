@@ -1,0 +1,31 @@
+{% set job_args = ["args", "class", "created_at", "jid", "queue", "retry"] %}
+{% set extra_job_args = ["enqueued_at", "error_class", "error_message", "failed_at", "retried_at", "retry_count"] %}
+
+{% if jobs | length > 0 %}
+  <table>
+    <tr>
+      {% for arg in job_args %}
+        <th>{{ arg }}</th>
+      {% endfor %}
+      {% for arg in extra_job_args %}
+        <th>{{ arg }}</th>
+      {% endfor %}
+    <tr>
+    {% for job in jobs %}
+      <tr>
+        {% for arg in job_args %}
+          <td>{{ job[arg] }}</td>
+        {% endfor %}
+        {% for arg in extra_job_args %}
+          <td>
+            {% if arg in job %}
+              {{ job[arg] }}
+            {% endif %}
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>No jobs</p>
+{% endif %}
