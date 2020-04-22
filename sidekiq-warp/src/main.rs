@@ -7,7 +7,7 @@ use std::error::Error;
 use tera::{Context, Tera};
 use warp::Filter;
 
-static TEMPLATE_INDEX: &str = include_str!("../templates/index.html");
+// static TEMPLATE_INDEX: &str = include_str!("../templates/index.html");
 
 #[tokio::main]
 async fn main() {
@@ -31,8 +31,9 @@ async fn main() {
 fn handle_request() -> Result<String, Box<dyn Error>> {
     let redis_url = std::env::var("REDIS_URL")?;
     let mut sidekiq = Client::new(&redis_url)?;
-    let mut tera = Tera::default();
-    tera.add_raw_template("index.html", TEMPLATE_INDEX)?;
+    let tera = Tera::new("sidekiq-warp/templates/**/*")?;
+    // let mut tera = Tera::default();
+    // tera.add_raw_template("index.html", TEMPLATE_INDEX)?;
     let context = sidekiq_data(&mut sidekiq)?;
     let rendered = tera.render("index.html", &context)?;
     Ok(rendered)
