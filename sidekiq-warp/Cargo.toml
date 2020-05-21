@@ -5,6 +5,7 @@ authors = ["Dax Huiberts <daxhuiberts@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+include_dir = "*"
 hyper = "*"
 listenfd = "*"
 serde = { version = "*", features = ["derive"] }

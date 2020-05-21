@@ -74,10 +74,11 @@ fn get_tera_instance() -> Result<Tera, Box<dyn Error>> {
 
 #[cfg(not(feature = "dynamic_templates"))]
 fn get_tera_instance() -> Result<Tera, Box<dyn Error>> {
-    static TEMPLATE_INDEX: &str = include_str!("../templates/index.html");
-    static TEMPLATE_JOBS: &str = include_str!("../templates/jobs.html");
+    use include_dir::{include_dir, Dir};
+    static TEMPLATES: Dir = include_dir!("templates");
     let mut tera = Tera::default();
-    tera.add_raw_template("index.html", TEMPLATE_INDEX)?;
-    tera.add_raw_template("jobs.html", TEMPLATE_JOBS)?;
+    for file in TEMPLATES.files().iter() {
+        tera.add_raw_template(file.path, file.contents_utf8().unwrap())?;
+    }
     Ok(tera)
 }
