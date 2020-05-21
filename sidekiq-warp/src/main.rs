@@ -67,12 +67,12 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
     Ok(context)
 }
 
-#[cfg(debug_assertions)]
+#[cfg(feature = "dynamic_templates")]
 fn get_tera_instance() -> Result<Tera, Box<dyn Error>> {
-    Ok(Tera::new("sidekiq-warp/templates/**/*")?)
+    Ok(Tera::new("templates/*")?)
 }
 
-#[cfg(not(debug_assertions))]
+#[cfg(not(feature = "dynamic_templates"))]
 fn get_tera_instance() -> Result<Tera, Box<dyn Error>> {
     static TEMPLATE_INDEX: &str = include_str!("../templates/index.html");
     static TEMPLATE_JOBS: &str = include_str!("../templates/jobs.html");

@@ -12,3 +12,6 @@ sidekiq-lib = { path = "../sidekiq-lib" }
 tera = { version = "*", default-features = false }
 tokio = { version = "0.2", features = ["full"] }
 warp = "*"
+
+[features]
+dynamic_templates = []

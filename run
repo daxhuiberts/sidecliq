@@ -1,2 +1,0 @@
-#!/bin/sh
-systemfd  --no-pid --socket ${1:-3000} -- cargo watch -x 'run --bin sidekiq-warp'
