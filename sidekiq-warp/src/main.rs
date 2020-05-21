@@ -7,8 +7,6 @@ use std::error::Error;
 use tera::{Context, Tera};
 use warp::Filter;
 
-// static TEMPLATE_INDEX: &str = include_str!("../templates/index.html");
-
 #[tokio::main]
 async fn main() {
     let req = || {
@@ -31,9 +29,7 @@ async fn main() {
 fn handle_request() -> Result<String, Box<dyn Error>> {
     let redis_url = std::env::var("REDIS_URL")?;
     let mut sidekiq = Client::new(&redis_url)?;
-    let tera = Tera::new("sidekiq-warp/templates/**/*")?;
-    // let mut tera = Tera::default();
-    // tera.add_raw_template("index.html", TEMPLATE_INDEX)?;
+    let tera = get_tera_instance()?;
     let context = sidekiq_data(&mut sidekiq)?;
     let rendered = tera.render("index.html", &context)?;
     Ok(rendered)
@@ -69,4 +65,19 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
     context.insert("dead", &client.dead()?);
 
     Ok(context)
+}
+
+#[cfg(debug_assertions)]
+fn get_tera_instance() -> Result<Tera, Box<dyn Error>> {
+    Ok(Tera::new("sidekiq-warp/templates/**/*")?)
+}
+
+#[cfg(not(debug_assertions))]
+fn get_tera_instance() -> Result<Tera, Box<dyn Error>> {
+    static TEMPLATE_INDEX: &str = include_str!("../templates/index.html");
+    static TEMPLATE_JOBS: &str = include_str!("../templates/jobs.html");
+    let mut tera = Tera::default();
+    tera.add_raw_template("index.html", TEMPLATE_INDEX)?;
+    tera.add_raw_template("jobs.html", TEMPLATE_JOBS)?;
+    Ok(tera)
 }
