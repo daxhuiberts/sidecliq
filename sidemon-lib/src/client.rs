@@ -49,23 +49,73 @@ impl Client {
         Ok(self.inner.smembers("queues")?)
     }
 
+    pub fn queue<'a>(&'a mut self, queue_name: &str) -> ClientQueue<'a> {
+        ClientQueue {
+            inner: &mut self.inner,
+            name: std::borrow::Cow::Owned(format!("queue:{}", queue_name)),
+            redis_type: ClientQueueType::List,
+        }
+    }
+
+    pub fn retry<'a>(&'a mut self) -> ClientQueue<'a> {
+        ClientQueue {
+            inner: &mut self.inner,
+            name: std::borrow::Cow::Borrowed("retry"),
+            redis_type: ClientQueueType::SortedSet,
+        }
+    }
+
+    pub fn schedule<'a>(&'a mut self) -> ClientQueue<'a> {
+        ClientQueue {
+            inner: &mut self.inner,
+            name: std::borrow::Cow::Borrowed("schedule"),
+            redis_type: ClientQueueType::SortedSet,
+        }
+    }
+
+    pub fn dead<'a>(&'a mut self) -> ClientQueue<'a> {
+        ClientQueue {
+            inner: &mut self.inner,
+            name: std::borrow::Cow::Borrowed("dead"),
+            redis_type: ClientQueueType::SortedSet,
+        }
+    }
+
     pub fn queue_jobs(&mut self, queue_name: &str) -> Result<Vec<Job>> {
-        let raw_result: Vec<String> = self.inner.lrange(format!("queue:{}", queue_name), 0, 10)?;
-        Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
+        self.queue(queue_name).jobs()
     }
 
     pub fn retry_jobs(&mut self) -> Result<Vec<Job>> {
-        let raw_result: Vec<String> = self.inner.zrange("retry", 0, 10)?;
-        Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
+        self.retry().jobs()
     }
 
     pub fn schedule_jobs(&mut self) -> Result<Vec<Job>> {
-        let raw_result: Vec<String> = self.inner.zrange("schedule", 0, 10)?;
-        Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
+        self.schedule().jobs()
     }
 
     pub fn dead_jobs(&mut self) -> Result<Vec<Job>> {
-        let raw_result: Vec<String> = self.inner.zrange("dead", 0, 10)?;
+        self.dead().jobs()
+    }
+}
+
+enum ClientQueueType {
+    List,
+    SortedSet,
+}
+
+pub struct ClientQueue<'a> {
+    inner: &'a mut redis::Connection,
+    name: std::borrow::Cow<'a, str>,
+    redis_type: ClientQueueType,
+}
+
+impl<'a> ClientQueue<'a> {
+    pub fn jobs(&mut self) -> Result<Vec<Job>> {
+        let command = match self.redis_type {
+            ClientQueueType::List => "LRANGE",
+            ClientQueueType::SortedSet => "ZRANGE",
+        };
+        let raw_result: Vec<String> = redis::cmd(command).arg(&*self.name).arg(0).arg(10).query(self.inner)?;
         Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
     }
 }
