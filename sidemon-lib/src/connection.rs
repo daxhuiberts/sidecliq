@@ -29,18 +29,18 @@ impl Connection {
     }
 
     pub fn queue(&mut self, queue_name: &str) -> Result<Value> {
-        Ok(self.inner.lrange(format!("queue:{}", queue_name), 0, -1)?)
+        Ok(self.inner.lrange(format!("queue:{}", queue_name), 0, 10)?)
     }
 
     pub fn retry(&mut self) -> Result<Value> {
-        Ok(self.inner.zrange("retry", 0, -1)?)
+        Ok(self.inner.zrange("retry", 0, 10)?)
     }
 
     pub fn schedule(&mut self) -> Result<Value> {
-        Ok(self.inner.zrange("schedule", 0, -1)?)
+        Ok(self.inner.zrange("schedule", 0, 10)?)
     }
 
     pub fn dead(&mut self) -> Result<Value> {
-        Ok(self.inner.zrange("dead", 0, -1)?)
+        Ok(self.inner.zrange("dead", 0, 10)?)
     }
 }
