@@ -49,22 +49,22 @@ impl Client {
         Ok(self.inner.smembers("queues")?)
     }
 
-    pub fn queue(&mut self, queue_name: &str) -> Result<Vec<Job>> {
+    pub fn queue_jobs(&mut self, queue_name: &str) -> Result<Vec<Job>> {
         let raw_result: Vec<String> = self.inner.lrange(format!("queue:{}", queue_name), 0, 10)?;
         Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
     }
 
-    pub fn retry(&mut self) -> Result<Vec<Job>> {
+    pub fn retry_jobs(&mut self) -> Result<Vec<Job>> {
         let raw_result: Vec<String> = self.inner.zrange("retry", 0, 10)?;
         Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
     }
 
-    pub fn schedule(&mut self) -> Result<Vec<Job>> {
+    pub fn schedule_jobs(&mut self) -> Result<Vec<Job>> {
         let raw_result: Vec<String> = self.inner.zrange("schedule", 0, 10)?;
         Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
     }
 
-    pub fn dead(&mut self) -> Result<Vec<Job>> {
+    pub fn dead_jobs(&mut self) -> Result<Vec<Job>> {
         let raw_result: Vec<String> = self.inner.zrange("dead", 0, 10)?;
         Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
     }

@@ -55,14 +55,14 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
 
     let queue_names = client.queue_names()?;
     let queues: HashMap<String, Vec<types::Job>> = queue_names.into_iter().map(|queue_name| {
-        let queue = client.queue(&queue_name).unwrap();
+        let queue = client.queue_jobs(&queue_name).unwrap();
         (queue_name, queue)
     }).collect();
     context.insert("queues", &queues);
 
-    context.insert("retry", &client.retry()?);
-    context.insert("schedule", &client.schedule()?);
-    context.insert("dead", &client.dead()?);
+    context.insert("retry", &client.retry_jobs()?);
+    context.insert("schedule", &client.schedule_jobs()?);
+    context.insert("dead", &client.dead_jobs()?);
 
     Ok(context)
 }
