@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-  "sidekiq-lib",
-  "sidekiq-cli",
-  "sidekiq-warp",
+  "sidemon-cli",
+  "sidemon-lib",
+  "sidemon-warp",
 ]

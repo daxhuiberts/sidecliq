@@ -1,6 +1,6 @@
 use hyper::server::Server;
-use sidekiq_lib::client::Client;
-use sidekiq_lib::types;
+use sidemon_lib::client::Client;
+use sidemon_lib::types;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::error::Error;

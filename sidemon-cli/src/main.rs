@@ -1,4 +1,4 @@
-use sidekiq_lib::client::Client;
+use sidemon_lib::client::Client;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let redis_url = std::env::var("REDIS_URL")?;

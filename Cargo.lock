@@ -1368,14 +1368,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
 
 [[package]]
-name = "sidekiq-cli"
+name = "sidemon-cli"
 version = "0.1.0"
 dependencies = [
- "sidekiq-lib",
+ "sidemon-lib",
 ]
 
 [[package]]
-name = "sidekiq-lib"
+name = "sidemon-lib"
 version = "0.1.0"
 dependencies = [
  "itertools",
@@ -1387,14 +1387,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "sidekiq-warp"
+name = "sidemon-warp"
 version = "0.1.0"
 dependencies = [
  "hyper",
  "include_dir",
  "listenfd",
  "serde",
- "sidekiq-lib",
+ "sidemon-lib",
  "tera",
  "tokio",
  "warp",
