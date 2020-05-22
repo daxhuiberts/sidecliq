@@ -8,8 +8,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("\nprocess ({}): {:?}", process_name, client.process(&process_name)?);
 
         println!("\nworkers ({}):", process_name);
-        for (id, worker) in client.workers(&process_name)? {
-            println!("- {}: {:?}", id, worker);
+        for worker in client.workers(&process_name)? {
+            println!("- {:?}", worker);
         }
     }
 

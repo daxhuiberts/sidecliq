@@ -39,9 +39,17 @@ impl Client {
         Ok(serde_json::from_value(JsonValue::Object(map))?)
     }
 
-    pub fn workers(&mut self, process_name: &str) -> Result<HashMap<String, Job>> {
+    pub fn workers(&mut self, process_name: &str) -> Result<Vec<Worker>> {
         let raw_result: HashMap<String, String> = self.inner.hgetall(format!("{}:workers", process_name))?;
-        let result: Result<HashMap<String, Job>> = raw_result.into_iter().map(|(id, worker)| Ok((id, serde_json::from_str(&worker)?)) ).try_collect();
+        let result: Result<Vec<Worker>> = raw_result.into_iter().map(|(id, item_str)| {
+            let mut item: HashMap<String, JsonValue> = serde_json::from_str(&item_str)?;
+            let run_at = item.remove("run_at").unwrap().as_i64().unwrap();
+            let queue = item.remove("queue").unwrap().as_str().unwrap().to_string();
+            let payload = item.remove("payload").unwrap();
+            let job: Job = serde_json::from_str(payload.as_str().unwrap())?;
+            let worker = Worker { id, run_at, queue, job };
+            Ok(worker)
+        }).try_collect();
         result
     }
 

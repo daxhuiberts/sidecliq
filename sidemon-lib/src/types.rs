@@ -22,6 +22,15 @@ pub struct Process {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+pub struct Worker {
+    pub id: String,
+    pub run_at: i64,
+    pub queue: String,
+    pub job: Job,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Job {
     pub args: Vec<JsonValue>,
     pub class: String,
