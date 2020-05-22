@@ -80,22 +80,6 @@ impl Client {
             redis_type: ClientQueueType::SortedSet,
         }
     }
-
-    pub fn queue_jobs(&mut self, queue_name: &str) -> Result<Vec<Job>> {
-        self.queue(queue_name).jobs()
-    }
-
-    pub fn retry_jobs(&mut self) -> Result<Vec<Job>> {
-        self.retry().jobs()
-    }
-
-    pub fn schedule_jobs(&mut self) -> Result<Vec<Job>> {
-        self.schedule().jobs()
-    }
-
-    pub fn dead_jobs(&mut self) -> Result<Vec<Job>> {
-        self.dead().jobs()
-    }
 }
 
 enum ClientQueueType {

@@ -15,23 +15,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for queue_name in client.queue_names()? {
         println!("\nqueue ({}):", queue_name);
-        for item in client.queue_jobs(&queue_name)? {
+        for item in client.queue(&queue_name).jobs()? {
             println!("- {:?}", item);
         }
     }
 
     println!("\nretry:");
-    for item in client.retry_jobs()? {
+    for item in client.retry().jobs()? {
         println!("- {:?}", item);
     }
 
     println!("\nschedule:");
-    for item in client.schedule_jobs()? {
+    for item in client.schedule().jobs()? {
         println!("- {:?}", item);
     }
 
     println!("\ndead:");
-    for item in client.dead_jobs()? {
+    for item in client.dead().jobs()? {
         println!("- {:?}", item);
     }
 
