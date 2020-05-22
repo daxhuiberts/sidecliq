@@ -21,7 +21,7 @@ impl Client {
         #[derive(Debug, Deserialize, Serialize)]
         #[serde(deny_unknown_fields)]
         pub struct ProcessRaw {
-            pub busy: bool,
+            pub busy: u8,
             #[serde(deserialize_with = "serde_with::json::nested::deserialize")]
             pub info: JsonValue,
             pub quiet: bool,
@@ -31,7 +31,7 @@ impl Client {
         let mut process: ProcessRaw = serde_redis::from_redis_value(self.connection.process(process_name)?)?;
         let info = std::mem::take(&mut process.info);
         let mut map = if let JsonValue::Object(map) = info { Ok(map) } else { Err("process.info is not a json object") }?;
-        map.insert("busy".into(), JsonValue::Bool(process.busy));
+        map.insert("busy".into(), JsonValue::Number(process.busy.into()));
         map.insert("quiet".into(), JsonValue::Bool(process.quiet));
         map.insert("beat".into(), JsonValue::Number(serde_json::Number::from_f64(process.beat).unwrap()));
         Ok(serde_json::from_value(JsonValue::Object(map))?)
