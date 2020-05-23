@@ -54,15 +54,15 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
     let process_names = client.process_names()?;
     let processes: Vec<Process> = process_names.into_iter().map(|process_name| {
         let mut process = client.process(&process_name);
-        Process { name: process.name().to_string(), info: process.info().unwrap(), workers: process.workers().unwrap() }
-    }).collect();
+        Ok(Process { name: process.name().to_string(), info: process.info()?, workers: process.workers()? })
+    }).collect::<Result<Vec<Process>, Box<dyn Error>>>()?;
     context.insert("processes", &processes);
 
     let queue_names = client.queue_names()?;
     let queues: Vec<Queue> = queue_names.into_iter().map(|queue_name| {
         let mut queue = client.queue(&queue_name);
-        Queue { name: queue.name().to_string(), size: queue.size().unwrap(), jobs: queue.jobs().unwrap() }
-    }).collect();
+        Ok(Queue { name: queue.name().to_string(), size: queue.size()?, jobs: queue.jobs()? })
+    }).collect::<Result<Vec<Queue>, Box<dyn Error>>>()?;
     context.insert("queues", &queues);
 
     let mut retry = client.retry();
