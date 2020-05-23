@@ -1,7 +1,6 @@
 use hyper::server::Server;
 use sidemon_lib::client::Client;
 use sidemon_lib::types;
-use std::collections::HashMap;
 use std::convert::Infallible;
 use std::error::Error;
 use tera::{Context, Tera};
@@ -39,38 +38,44 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
     use serde::{Deserialize, Serialize};
     #[derive(Debug, Deserialize, Serialize)]
     struct Process {
+        name: String,
         info: types::ProcessInfo,
         workers: Vec<types::Worker>,
+    }
+    #[derive(Debug, Deserialize, Serialize)]
+    struct Queue {
+        name: String,
+        size: u32,
+        jobs: Vec<types::Job>,
     }
 
     let mut context = Context::new();
 
     let process_names = client.process_names()?;
-    let processes: HashMap<String, Process> = process_names.into_iter().map(|process_name| {
+    let processes: Vec<Process> = process_names.into_iter().map(|process_name| {
         let mut process = client.process(&process_name);
-        let info = process.info().unwrap();
-        let workers = process.workers().unwrap();
-        (process_name, Process { info, workers })
+        Process { name: process.name().to_string(), info: process.info().unwrap(), workers: process.workers().unwrap() }
     }).collect();
     context.insert("processes", &processes);
 
     let queue_names = client.queue_names()?;
-    let queues: HashMap<String, (u32, Vec<types::Job>)> = queue_names.into_iter().map(|queue_name| {
+    let queues: Vec<Queue> = queue_names.into_iter().map(|queue_name| {
         let mut queue = client.queue(&queue_name);
-        let size = queue.size().unwrap();
-        let jobs = queue.jobs().unwrap();
-        (queue_name, (size, jobs))
+        Queue { name: queue.name().to_string(), size: queue.size().unwrap(), jobs: queue.jobs().unwrap() }
     }).collect();
     context.insert("queues", &queues);
 
     let mut retry = client.retry();
-    context.insert("retry", &(retry.size()?, retry.jobs()?));
+    let retry_queue = Queue { name: "retry".to_string(), size: retry.size()?, jobs: retry.jobs()? };
+    context.insert("retry", &retry_queue);
 
     let mut schedule = client.schedule();
-    context.insert("schedule", &(schedule.size()?, schedule.jobs()?));
+    let schedule_queue = Queue { name: "schedule".to_string(), size: schedule.size()?, jobs: schedule.jobs()? };
+    context.insert("schedule", &schedule_queue);
 
     let mut dead = client.dead();
-    context.insert("dead", &(dead.size()?, dead.jobs()?));
+    let dead_queue = Queue { name: "dead".to_string(), size: dead.size()?, jobs: dead.jobs()? };
+    context.insert("dead", &dead_queue);
 
     Ok(context)
 }

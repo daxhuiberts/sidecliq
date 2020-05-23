@@ -68,6 +68,10 @@ pub struct ClientProcess<'a> {
 }
 
 impl<'a> ClientProcess<'a> {
+    pub fn name(&self) -> &str {
+        self.name
+    }
+
     pub fn info(&mut self) -> Result<ProcessInfo> {
         use serde::{Deserialize, Serialize};
         #[derive(Debug, Deserialize, Serialize)]
@@ -116,6 +120,10 @@ pub struct ClientQueue<'a> {
 }
 
 impl<'a> ClientQueue<'a> {
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
+    }
+
     pub fn size(&mut self) -> Result<u32> {
         let command = match self.redis_type {
             ClientQueueType::List => "LLEN",

@@ -19,7 +19,7 @@
           <th>{{ arg }}</th>
         {% endfor %}
       </tr>
-      {% for _name, process in processes %}
+      {% for process in processes %}
         <tr>
           {% for arg in process_args %}
             <td>{{ process.info[arg] }}</td>
@@ -28,34 +28,34 @@
       {% endfor %}
     </table>
 
-    <h2>Jobs</h2>
+    <h2>Workers</h2>
     <table>
-      {% for _name, process in processes %}
-        {% for job in process.workers %}
+      {% for process in processes %}
+        {% for worker in process.workers %}
         <tr>
-          <td>{{ job | json_encode }}</td>
+          <td>{{ worker | json_encode }}</td>
         </tr>
         {% endfor %}
       {% endfor %}
     </table>
 
     <h2>Enqueued</h2>
-    {% for name, queue in queues %}
-      <h3>{{ name }} ({{ queue.0 }})</h3>
-      {% set jobs = queue.1 %}
+    {% for queue in queues %}
+      <h3>{{ queue.name }} ({{ queue.size }})</h3>
+      {% set jobs = queue.jobs %}
       {% include "jobs.html" %}
     {% endfor %}
 
-    <h2>Retry ({{ retry.0 }})</h2>
-    {% set jobs = retry.1 %}
+    <h2>Retry ({{ retry.size }})</h2>
+    {% set jobs = retry.jobs %}
     {% include "jobs.html" %}
 
-    <h2>Scheduled ({{ schedule.0 }})</h2>
-    {% set jobs = schedule.1 %}
+    <h2>Scheduled ({{ schedule.size }})</h2>
+    {% set jobs = schedule.jobs %}
     {% include "jobs.html" %}
 
-    <h2>Dead ({{ dead.0 }})</h2>
-    {% set jobs = dead.1 %}
+    <h2>Dead ({{ dead.size }})</h2>
+    {% set jobs = dead.jobs %}
     {% include "jobs.html" %}
   </body>
 </html>

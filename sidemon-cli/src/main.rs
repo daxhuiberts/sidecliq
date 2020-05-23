@@ -6,7 +6,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for process_name in client.process_names()? {
         let mut process = client.process(&process_name);
-        println!("\nprocess ({}): {:?}", process_name, process.info()?);
+        print!("\nprocess ({}):", process.name());
+        println!(" {:?}", process.info()?);
 
         println!("\nworkers ({}):", process_name);
         for worker in process.workers()? {
@@ -16,8 +17,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for queue_name in client.queue_names()? {
         let mut queue = client.queue(&queue_name);
-        println!("\nqueue {} ({}):", queue_name, queue.size()?);
-        for item in client.queue(&queue_name).jobs()? {
+        print!("\n{}", queue.name());
+        println!(" ({}):", queue.size()?);
+        for item in queue.jobs()? {
             println!("- {:?}", item);
         }
     }
