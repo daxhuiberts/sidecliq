@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct Process {
+pub struct ProcessInfo {
     pub busy: u8,
     pub hostname: String,
     pub started_at: f64,

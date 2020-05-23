@@ -39,7 +39,7 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
     use serde::{Deserialize, Serialize};
     #[derive(Debug, Deserialize, Serialize)]
     struct Process {
-        info: types::Process,
+        info: types::ProcessInfo,
         workers: Vec<types::Worker>,
     }
 
@@ -47,9 +47,10 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
 
     let process_names = client.process_names()?;
     let processes: HashMap<String, Process> = process_names.into_iter().map(|process_name| {
-        let process = client.process(&process_name).unwrap();
-        let workers = client.workers(&process_name).unwrap();
-        (process_name, Process { info: process, workers })
+        let mut process = client.process(&process_name);
+        let info = process.info().unwrap();
+        let workers = process.workers().unwrap();
+        (process_name, Process { info, workers })
     }).collect();
     context.insert("processes", &processes);
 

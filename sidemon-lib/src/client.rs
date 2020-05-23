@@ -18,39 +18,11 @@ impl Client {
         Ok(self.inner.smembers("processes")?)
     }
 
-    pub fn process(&mut self, process_name: &str) -> Result<Process> {
-        use serde::{Deserialize, Serialize};
-        #[derive(Debug, Deserialize, Serialize)]
-        #[serde(deny_unknown_fields)]
-        pub struct ProcessRaw {
-            pub busy: u8,
-            #[serde(deserialize_with = "serde_with::json::nested::deserialize")]
-            pub info: JsonValue,
-            pub quiet: bool,
-            pub beat: f64
+    pub fn process<'a>(&'a mut self, process_name: &'a str) -> ClientProcess<'a> {
+        ClientProcess {
+            inner: &mut self.inner,
+            name: process_name,
         }
-
-        let mut process: ProcessRaw = serde_redis::from_redis_value(self.inner.hgetall(process_name)?)?;
-        let info = std::mem::take(&mut process.info);
-        let mut map = if let JsonValue::Object(map) = info { Ok(map) } else { Err("process.info is not a json object") }?;
-        map.insert("busy".into(), JsonValue::Number(process.busy.into()));
-        map.insert("quiet".into(), JsonValue::Bool(process.quiet));
-        map.insert("beat".into(), JsonValue::Number(serde_json::Number::from_f64(process.beat).unwrap()));
-        Ok(serde_json::from_value(JsonValue::Object(map))?)
-    }
-
-    pub fn workers(&mut self, process_name: &str) -> Result<Vec<Worker>> {
-        let raw_result: HashMap<String, String> = self.inner.hgetall(format!("{}:workers", process_name))?;
-        let result: Result<Vec<Worker>> = raw_result.into_iter().map(|(id, item_str)| {
-            let mut item: HashMap<String, JsonValue> = serde_json::from_str(&item_str)?;
-            let run_at = item.remove("run_at").unwrap().as_i64().unwrap();
-            let queue = item.remove("queue").unwrap().as_str().unwrap().to_string();
-            let payload = item.remove("payload").unwrap();
-            let job: Job = serde_json::from_str(payload.as_str().unwrap())?;
-            let worker = Worker { id, run_at, queue, job };
-            Ok(worker)
-        }).try_collect();
-        result
     }
 
     pub fn queue_names(&mut self) -> Result<Vec<String>> {
@@ -87,6 +59,48 @@ impl Client {
             name: std::borrow::Cow::Borrowed("dead"),
             redis_type: ClientQueueType::SortedSet,
         }
+    }
+}
+
+pub struct ClientProcess<'a> {
+    inner: &'a mut redis::Connection,
+    name: &'a str,
+}
+
+impl<'a> ClientProcess<'a> {
+    pub fn info(&mut self) -> Result<ProcessInfo> {
+        use serde::{Deserialize, Serialize};
+        #[derive(Debug, Deserialize, Serialize)]
+        #[serde(deny_unknown_fields)]
+        pub struct ProcessRaw {
+            pub busy: u8,
+            #[serde(deserialize_with = "serde_with::json::nested::deserialize")]
+            pub info: JsonValue,
+            pub quiet: bool,
+            pub beat: f64
+        }
+
+        let mut process: ProcessRaw = serde_redis::from_redis_value(self.inner.hgetall(self.name)?)?;
+        let info = std::mem::take(&mut process.info);
+        let mut map = if let JsonValue::Object(map) = info { Ok(map) } else { Err("process.info is not a json object") }?;
+        map.insert("busy".into(), JsonValue::Number(process.busy.into()));
+        map.insert("quiet".into(), JsonValue::Bool(process.quiet));
+        map.insert("beat".into(), JsonValue::Number(serde_json::Number::from_f64(process.beat).unwrap()));
+        Ok(serde_json::from_value(JsonValue::Object(map))?)
+    }
+
+    pub fn workers(&mut self) -> Result<Vec<Worker>> {
+        let raw_result: HashMap<String, String> = self.inner.hgetall(format!("{}:workers", self.name))?;
+        let result: Result<Vec<Worker>> = raw_result.into_iter().map(|(id, item_str)| {
+            let mut item: HashMap<String, JsonValue> = serde_json::from_str(&item_str)?;
+            let run_at = item.remove("run_at").unwrap().as_i64().unwrap();
+            let queue = item.remove("queue").unwrap().as_str().unwrap().to_string();
+            let payload = item.remove("payload").unwrap();
+            let job: Job = serde_json::from_str(payload.as_str().unwrap())?;
+            let worker = Worker { id, run_at, queue, job };
+            Ok(worker)
+        }).try_collect();
+        result
     }
 }
 

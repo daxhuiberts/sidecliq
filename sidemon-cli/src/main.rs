@@ -5,10 +5,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = Client::new(&redis_url)?;
 
     for process_name in client.process_names()? {
-        println!("\nprocess ({}): {:?}", process_name, client.process(&process_name)?);
+        let mut process = client.process(&process_name);
+        println!("\nprocess ({}): {:?}", process_name, process.info()?);
 
         println!("\nworkers ({}):", process_name);
-        for worker in client.workers(&process_name)? {
+        for worker in process.workers()? {
             println!("- {:?}", worker);
         }
     }
