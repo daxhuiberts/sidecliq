@@ -14,25 +14,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     for queue_name in client.queue_names()? {
-        println!("\nqueue ({}):", queue_name);
+        let mut queue = client.queue(&queue_name);
+        println!("\nqueue {} ({}):", queue_name, queue.size()?);
         for item in client.queue(&queue_name).jobs()? {
             println!("- {:?}", item);
         }
     }
 
-    println!("\nretry:");
-    for item in client.retry().jobs()? {
-        println!("- {:?}", item);
+    let mut retry = client.retry();
+    println!("\nretry ({}):", retry.size()?);
+    for job in retry.jobs()? {
+        println!("- {:?}", job);
     }
 
-    println!("\nschedule:");
-    for item in client.schedule().jobs()? {
-        println!("- {:?}", item);
+    let mut schedule = client.schedule();
+    println!("\nschedule ({}):", schedule.size()?);
+    for job in schedule.jobs()? {
+        println!("- {:?}", job);
     }
 
-    println!("\ndead:");
-    for item in client.dead().jobs()? {
-        println!("- {:?}", item);
+    let mut dead = client.dead();
+    println!("\ndead ({}):", dead.size()?);
+    for job in dead.jobs()? {
+        println!("- {:?}", job);
     }
 
     Ok(())

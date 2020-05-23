@@ -40,7 +40,7 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
     #[derive(Debug, Deserialize, Serialize)]
     struct Process {
         info: types::Process,
-        workers: HashMap<String, types::Job>,
+        workers: Vec<types::Worker>,
     }
 
     let mut context = Context::new();
@@ -54,15 +54,22 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
     context.insert("processes", &processes);
 
     let queue_names = client.queue_names()?;
-    let queues: HashMap<String, Vec<types::Job>> = queue_names.into_iter().map(|queue_name| {
-        let queue = client.queue(&queue_name).jobs().unwrap();
-        (queue_name, queue)
+    let queues: HashMap<String, (u32, Vec<types::Job>)> = queue_names.into_iter().map(|queue_name| {
+        let mut queue = client.queue(&queue_name);
+        let size = queue.size().unwrap();
+        let jobs = queue.jobs().unwrap();
+        (queue_name, (size, jobs))
     }).collect();
     context.insert("queues", &queues);
 
-    context.insert("retry", &client.retry().jobs()?);
-    context.insert("schedule", &client.schedule().jobs()?);
-    context.insert("dead", &client.dead().jobs()?);
+    let mut retry = client.retry();
+    context.insert("retry", &(retry.size()?, retry.jobs()?));
+
+    let mut schedule = client.schedule();
+    context.insert("schedule", &(schedule.size()?, schedule.jobs()?));
+
+    let mut dead = client.dead();
+    context.insert("dead", &(dead.size()?, dead.jobs()?));
 
     Ok(context)
 }

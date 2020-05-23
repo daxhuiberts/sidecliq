@@ -31,9 +31,8 @@
     <h2>Jobs</h2>
     <table>
       {% for _name, process in processes %}
-        {% for id, job in process.workers %}
+        {% for job in process.workers %}
         <tr>
-          <td>{{ id }}</td>
           <td>{{ job | json_encode }}</td>
         </tr>
         {% endfor %}
@@ -42,21 +41,21 @@
 
     <h2>Enqueued</h2>
     {% for name, queue in queues %}
-      <h3>{{ name }}</h3>
-      {% set jobs = queue %}
+      <h3>{{ name }} ({{ queue.0 }})</h3>
+      {% set jobs = queue.1 %}
       {% include "jobs.html" %}
     {% endfor %}
 
-    <h2>Retry</h2>
-    {% set jobs = retry %}
+    <h2>Retry ({{ retry.0 }})</h2>
+    {% set jobs = retry.1 %}
     {% include "jobs.html" %}
 
-    <h2>Scheduled</h2>
-    {% set jobs = schedule %}
+    <h2>Scheduled ({{ schedule.0 }})</h2>
+    {% set jobs = schedule.1 %}
     {% include "jobs.html" %}
 
-    <h2>Dead</h2>
-    {% set jobs = dead %}
+    <h2>Dead ({{ dead.0 }})</h2>
+    {% set jobs = dead.1 %}
     {% include "jobs.html" %}
   </body>
 </html>

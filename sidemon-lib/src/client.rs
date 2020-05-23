@@ -102,6 +102,14 @@ pub struct ClientQueue<'a> {
 }
 
 impl<'a> ClientQueue<'a> {
+    pub fn size(&mut self) -> Result<u32> {
+        let command = match self.redis_type {
+            ClientQueueType::List => "LLEN",
+            ClientQueueType::SortedSet => "ZCARD",
+        };
+        Ok(redis::cmd(command).arg(&*self.name).query(self.inner)?)
+    }
+
     pub fn jobs(&mut self) -> Result<Vec<Job>> {
         let command = match self.redis_type {
             ClientQueueType::List => "LRANGE",
