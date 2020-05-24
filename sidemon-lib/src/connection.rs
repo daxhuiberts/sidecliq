@@ -137,7 +137,7 @@ impl<'a> ConnectionQueue<'a> {
             ConnectionQueueType::List => "LRANGE",
             ConnectionQueueType::SortedSet => "ZRANGE",
         };
-        let raw_result: Vec<String> = redis::cmd(command).arg(&*self.name).arg(0).arg(10).query(self.inner)?;
+        let raw_result: Vec<String> = redis::cmd(command).arg(&*self.name).arg(0).arg(9).query(self.inner)?;
         Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)
     }
 }
