@@ -89,7 +89,7 @@ impl<'a> ConnectionProcess<'a> {
         let mut map = if let JsonValue::Object(map) = info { Ok(map) } else { Err("process.info is not a json object") }?;
         map.insert("busy".into(), JsonValue::Number(process.busy.into()));
         map.insert("quiet".into(), JsonValue::Bool(process.quiet));
-        map.insert("beat".into(), JsonValue::Number(serde_json::Number::from_f64(process.beat).unwrap()));
+        map.insert("beat".into(), JsonValue::Number(serde_json::Number::from_f64(process.beat).ok_or("not a f64")?));
         Ok(serde_json::from_value(JsonValue::Object(map))?)
     }
 
@@ -97,10 +97,10 @@ impl<'a> ConnectionProcess<'a> {
         let raw_result: HashMap<String, String> = self.inner.hgetall(format!("{}:workers", self.name))?;
         let result: Result<Vec<Worker>> = raw_result.into_iter().map(|(id, item_str)| {
             let mut item: HashMap<String, JsonValue> = serde_json::from_str(&item_str)?;
-            let run_at = item.remove("run_at").unwrap().as_i64().unwrap();
-            let queue = item.remove("queue").unwrap().as_str().unwrap().to_string();
-            let payload = item.remove("payload").unwrap();
-            let job: Job = serde_json::from_str(payload.as_str().unwrap())?;
+            let run_at = item.remove("run_at").ok_or("no run_at")?.as_i64().ok_or("no i64")?;
+            let queue = item.remove("queue").ok_or("no queue")?.as_str().ok_or("no str")?.to_string();
+            let payload = item.remove("payload").ok_or("no payload")?;
+            let job: Job = serde_json::from_str(payload.as_str().ok_or("no str")?)?;
             let worker = Worker { id, run_at, queue, job };
             Ok(worker)
         }).try_collect();
