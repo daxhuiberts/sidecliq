@@ -3,11 +3,11 @@ use redis::Commands;
 use std::collections::HashMap;
 use super::types::*;
 
-pub struct Client {
+pub struct Connection {
     inner: redis::Connection,
 }
 
-impl Client {
+impl Connection {
     pub fn new(url: &str) -> Result<Self> {
         let client = redis::Client::open(url)?;
         let conn = client.get_connection()?;
@@ -18,8 +18,8 @@ impl Client {
         Ok(self.inner.smembers("processes")?)
     }
 
-    pub fn process<'a>(&'a mut self, process_name: &'a str) -> ClientProcess<'a> {
-        ClientProcess {
+    pub fn process<'a>(&'a mut self, process_name: &'a str) -> ConnectionProcess<'a> {
+        ConnectionProcess {
             inner: &mut self.inner,
             name: process_name,
         }
@@ -29,45 +29,45 @@ impl Client {
         Ok(self.inner.smembers("queues")?)
     }
 
-    pub fn queue<'a>(&'a mut self, queue_name: &str) -> ClientQueue<'a> {
-        ClientQueue {
+    pub fn queue<'a>(&'a mut self, queue_name: &str) -> ConnectionQueue<'a> {
+        ConnectionQueue {
             inner: &mut self.inner,
             name: std::borrow::Cow::Owned(format!("queue:{}", queue_name)),
-            redis_type: ClientQueueType::List,
+            redis_type: ConnectionQueueType::List,
         }
     }
 
-    pub fn retry<'a>(&'a mut self) -> ClientQueue<'a> {
-        ClientQueue {
+    pub fn retry<'a>(&'a mut self) -> ConnectionQueue<'a> {
+        ConnectionQueue {
             inner: &mut self.inner,
             name: std::borrow::Cow::Borrowed("retry"),
-            redis_type: ClientQueueType::SortedSet,
+            redis_type: ConnectionQueueType::SortedSet,
         }
     }
 
-    pub fn schedule<'a>(&'a mut self) -> ClientQueue<'a> {
-        ClientQueue {
+    pub fn schedule<'a>(&'a mut self) -> ConnectionQueue<'a> {
+        ConnectionQueue {
             inner: &mut self.inner,
             name: std::borrow::Cow::Borrowed("schedule"),
-            redis_type: ClientQueueType::SortedSet,
+            redis_type: ConnectionQueueType::SortedSet,
         }
     }
 
-    pub fn dead<'a>(&'a mut self) -> ClientQueue<'a> {
-        ClientQueue {
+    pub fn dead<'a>(&'a mut self) -> ConnectionQueue<'a> {
+        ConnectionQueue {
             inner: &mut self.inner,
             name: std::borrow::Cow::Borrowed("dead"),
-            redis_type: ClientQueueType::SortedSet,
+            redis_type: ConnectionQueueType::SortedSet,
         }
     }
 }
 
-pub struct ClientProcess<'a> {
+pub struct ConnectionProcess<'a> {
     inner: &'a mut redis::Connection,
     name: &'a str,
 }
 
-impl<'a> ClientProcess<'a> {
+impl<'a> ConnectionProcess<'a> {
     pub fn name(&self) -> &str {
         self.name
     }
@@ -108,34 +108,34 @@ impl<'a> ClientProcess<'a> {
     }
 }
 
-enum ClientQueueType {
+enum ConnectionQueueType {
     List,
     SortedSet,
 }
 
-pub struct ClientQueue<'a> {
+pub struct ConnectionQueue<'a> {
     inner: &'a mut redis::Connection,
     name: std::borrow::Cow<'a, str>,
-    redis_type: ClientQueueType,
+    redis_type: ConnectionQueueType,
 }
 
-impl<'a> ClientQueue<'a> {
+impl<'a> ConnectionQueue<'a> {
     pub fn name(&self) -> &str {
         self.name.as_ref()
     }
 
     pub fn size(&mut self) -> Result<u32> {
         let command = match self.redis_type {
-            ClientQueueType::List => "LLEN",
-            ClientQueueType::SortedSet => "ZCARD",
+            ConnectionQueueType::List => "LLEN",
+            ConnectionQueueType::SortedSet => "ZCARD",
         };
         Ok(redis::cmd(command).arg(&*self.name).query(self.inner)?)
     }
 
     pub fn jobs(&mut self) -> Result<Vec<Job>> {
         let command = match self.redis_type {
-            ClientQueueType::List => "LRANGE",
-            ClientQueueType::SortedSet => "ZRANGE",
+            ConnectionQueueType::List => "LRANGE",
+            ConnectionQueueType::SortedSet => "ZRANGE",
         };
         let raw_result: Vec<String> = redis::cmd(command).arg(&*self.name).arg(0).arg(10).query(self.inner)?;
         Ok(raw_result.iter().map(AsRef::as_ref).map(serde_json::from_str).try_collect()?)

@@ -1,5 +1,5 @@
 use hyper::server::Server;
-use sidemon_lib::client::Client;
+use sidemon_lib::connection::Connection;
 use sidemon_lib::types;
 use std::convert::Infallible;
 use std::error::Error;
@@ -27,14 +27,14 @@ async fn main() {
 
 fn handle_request() -> Result<String, Box<dyn Error>> {
     let redis_url = std::env::var("REDIS_URL")?;
-    let mut sidekiq = Client::new(&redis_url)?;
+    let mut sidekiq = Connection::new(&redis_url)?;
     let tera = get_tera_instance()?;
     let context = sidekiq_data(&mut sidekiq)?;
     let rendered = tera.render("index.html", &context)?;
     Ok(rendered)
 }
 
-fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
+fn sidekiq_data(connection: &mut Connection) -> Result<tera::Context, Box<dyn Error>> {
     use serde::{Deserialize, Serialize};
     #[derive(Debug, Deserialize, Serialize)]
     struct Process {
@@ -51,29 +51,29 @@ fn sidekiq_data(client: &mut Client) -> Result<tera::Context, Box<dyn Error>> {
 
     let mut context = Context::new();
 
-    let process_names = client.process_names()?;
+    let process_names = connection.process_names()?;
     let processes: Vec<Process> = process_names.into_iter().map(|process_name| {
-        let mut process = client.process(&process_name);
+        let mut process = connection.process(&process_name);
         Ok(Process { name: process.name().to_string(), info: process.info()?, workers: process.workers()? })
     }).collect::<Result<Vec<Process>, Box<dyn Error>>>()?;
     context.insert("processes", &processes);
 
-    let queue_names = client.queue_names()?;
+    let queue_names = connection.queue_names()?;
     let queues: Vec<Queue> = queue_names.into_iter().map(|queue_name| {
-        let mut queue = client.queue(&queue_name);
+        let mut queue = connection.queue(&queue_name);
         Ok(Queue { name: queue.name().to_string(), size: queue.size()?, jobs: queue.jobs()? })
     }).collect::<Result<Vec<Queue>, Box<dyn Error>>>()?;
     context.insert("queues", &queues);
 
-    let mut retry = client.retry();
+    let mut retry = connection.retry();
     let retry_queue = Queue { name: "retry".to_string(), size: retry.size()?, jobs: retry.jobs()? };
     context.insert("retry", &retry_queue);
 
-    let mut schedule = client.schedule();
+    let mut schedule = connection.schedule();
     let schedule_queue = Queue { name: "schedule".to_string(), size: schedule.size()?, jobs: schedule.jobs()? };
     context.insert("schedule", &schedule_queue);
 
-    let mut dead = client.dead();
+    let mut dead = connection.dead();
     let dead_queue = Queue { name: "dead".to_string(), size: dead.size()?, jobs: dead.jobs()? };
     context.insert("dead", &dead_queue);
 

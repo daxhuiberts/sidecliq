@@ -1,11 +1,11 @@
-use sidemon_lib::client::Client;
+use sidemon_lib::connection::Connection;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let redis_url = std::env::var("REDIS_URL")?;
-    let mut client = Client::new(&redis_url)?;
+    let mut connection = Connection::new(&redis_url)?;
 
-    for process_name in client.process_names()? {
-        let mut process = client.process(&process_name);
+    for process_name in connection.process_names()? {
+        let mut process = connection.process(&process_name);
         print!("\nprocess ({}):", process.name());
         println!(" {:?}", process.info()?);
 
@@ -15,8 +15,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    for queue_name in client.queue_names()? {
-        let mut queue = client.queue(&queue_name);
+    for queue_name in connection.queue_names()? {
+        let mut queue = connection.queue(&queue_name);
         print!("\n{}", queue.name());
         println!(" ({}):", queue.size()?);
         for item in queue.jobs()? {
@@ -24,19 +24,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let mut retry = client.retry();
+    let mut retry = connection.retry();
     println!("\nretry ({}):", retry.size()?);
     for job in retry.jobs()? {
         println!("- {:?}", job);
     }
 
-    let mut schedule = client.schedule();
+    let mut schedule = connection.schedule();
     println!("\nschedule ({}):", schedule.size()?);
     for job in schedule.jobs()? {
         println!("- {:?}", job);
     }
 
-    let mut dead = client.dead();
+    let mut dead = connection.dead();
     println!("\ndead ({}):", dead.size()?);
     for job in dead.jobs()? {
         println!("- {:?}", job);
